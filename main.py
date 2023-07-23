@@ -169,6 +169,7 @@ def text_save(FILE_FLDR, FILE_NAME):
 async def upload_pdf_file(file: UploadFile = File(...)):
 
     c_directory = os.getcwd()
+    
     c_year = str(datetime.date.today().year)
     c_date = str(datetime.date.today().month) + '-' + str(datetime.date.today().day)
     fname = c_directory + f"/data/{c_year}/{c_date}/{file.filename}"
