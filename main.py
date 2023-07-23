@@ -4,7 +4,6 @@ from fastapi import FastAPI, File, UploadFile
 import datetime
 import openai
 import json 
-from dotenv import load_dotenv
 import fitz
 import time
 from PyPDF2 import PdfReader
@@ -166,14 +165,18 @@ def text_save(FILE_FLDR, FILE_NAME):
         print(f"Created text file '{folder_name}.txt' in the folder.")
         pdf_file = fitz.open(pdf_file_path)
 
-@app.post("/upload/pdf")
+@app.post("/upload/pdf/")
 async def upload_pdf_file(file: UploadFile = File(...)):
 
     c_directory = os.getcwd()
-    c_year = datetime.date.year()
-    c_date = datetime.date.day()
+    c_year = str(datetime.date.today().year)
+    c_date = str(datetime.date.today().month) + '-' + str(datetime.date.today().day)
     fname = c_directory + f"/data/{c_year}/{c_date}/{file.filename}"
     folder_name = c_directory + f"/data/{c_year}/{c_date}"
+
+    if not os.path.exists(folder_name):
+        os.makedirs(folder_name)
+
     with open(fname, "wb") as buffer:
         buffer.write(await file.read())
 

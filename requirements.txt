@@ -2,4 +2,6 @@ fastapi
 uvicorn
 openai
 ffmpeg
-fitz
+PyMuPDF
+PyPDF2  
+python-multipart
