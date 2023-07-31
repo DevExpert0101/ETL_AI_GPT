@@ -7,6 +7,8 @@ import json
 import fitz
 import time
 from PyPDF2 import PdfReader
+import pymongo
+import base64
 
 
 app = FastAPI()
@@ -180,6 +182,24 @@ async def upload_pdf_file(file: UploadFile = File(...)):
 
     with open(fname, "wb") as buffer:
         buffer.write(await file.read())
+
+    client = pymongo.MongoClient("mongodb+srv://KellyForPDFScraper:wKceyRadQErXNc92@enp.ocrp5.mongodb.net/?retryWrites=true&w=majority")
+    database = client["stgsupplier"]
+    pdf_collection = database["pdfcatalogue"]
+    # Read the PDF file
+    # Ensure pdf file size is < 11MB
+    with open(fname, "rb") as pdf_file:
+        pdf_data = pdf_file.read()
+
+    # Encode the binary PDF data as Base64
+    encoded_pdf_data = base64.b64encode(pdf_data)
+    pdf_document = {
+        "filename": file.filename,  # Set the desired filename for the PDF
+        "pdf_data": encoded_pdf_data.decode()  # Convert binary to string before inserting
+    }
+
+    # Insert the document into the MongoDB collection
+    pdf_collection.insert_one(pdf_document)
 
     data = get_json(folder_name, file.filename)
 

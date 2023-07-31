@@ -5,3 +5,4 @@ ffmpeg
 PyMuPDF
 PyPDF2  
 python-multipart
+pymongo
