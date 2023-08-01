@@ -1,6 +1,7 @@
 import os
 from dotenv import load_dotenv
 from fastapi import FastAPI, File, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 import datetime
 import openai
 import json 
@@ -13,6 +14,14 @@ import base64
 
 app = FastAPI()
 
+# Set up CORS middleware to allow all origins (*)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 class PumpDataProcessor:
     def __init__(self):
