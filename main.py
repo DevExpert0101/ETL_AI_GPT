@@ -10,6 +10,7 @@ import time
 from PyPDF2 import PdfReader
 import pymongo
 import base64
+import uuid
 
 
 app = FastAPI()
@@ -22,6 +23,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+client = pymongo.MongoClient("mongodb+srv://KellyForPDFScraper:wKceyRadQErXNc92@enp.ocrp5.mongodb.net/?retryWrites=true&w=majority")
+database = client["stgsupplier"]
+pdf_collection = database["pdfcatalogue"]
+img_collection = database["pdfimages"]
 
 class PumpDataProcessor:
     def __init__(self):
@@ -129,6 +135,13 @@ def extract_images_from_pdf(pdf_file_path, pdf_folder_path):
             imgfile = os.path.join(pdf_folder_path, f"img{xref:05}.{image['ext']}")
             with open(imgfile, "wb") as fout:
                 fout.write(imgdata)
+            
+            encoded_img_data = base64.b64decode(imgdata)
+            img_document = {
+                "img_id" : str(uuid.uuid4()),
+                "img_data" : encoded_img_data.decode()
+            }
+
             xreflist.append(xref)
     return imglist, xreflist
 
@@ -192,9 +205,7 @@ async def upload_pdf_file(file: UploadFile = File(...)):
     with open(fname, "wb") as buffer:
         buffer.write(await file.read())
 
-    client = pymongo.MongoClient("mongodb+srv://KellyForPDFScraper:wKceyRadQErXNc92@enp.ocrp5.mongodb.net/?retryWrites=true&w=majority")
-    database = client["stgsupplier"]
-    pdf_collection = database["pdfcatalogue"]
+
     # Read the PDF file
     # Ensure pdf file size is < 11MB
     with open(fname, "rb") as pdf_file:
