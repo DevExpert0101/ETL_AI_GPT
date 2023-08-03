@@ -144,6 +144,7 @@ def extract_images_from_pdf(pdf_file_path, pdf_folder_path):
                 "img_data" : imgdata
             }
 
+            img_collection.insert_one(img_document)
             img_ids.append(uid)
 
             xreflist.append(xref)
