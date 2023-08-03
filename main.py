@@ -141,7 +141,7 @@ def extract_images_from_pdf(pdf_file_path, pdf_folder_path):
             uid = str(uuid.uuid4())
             img_document = {
                 "img_id" : uid,
-                "img_data" : encoded_img_data.decode()
+                "img_data" : imgdata
             }
 
             img_ids.append(uid)
