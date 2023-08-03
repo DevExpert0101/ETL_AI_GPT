@@ -115,6 +115,7 @@ def extract_images_from_pdf(pdf_file_path, pdf_folder_path):
     page_count = doc.page_count
     xreflist = []
     imglist = []
+    img_ids = []
     for pno in range(page_count):
         il = doc.get_page_images(pno)
         imglist.extend([x[0] for x in il])
@@ -137,13 +138,16 @@ def extract_images_from_pdf(pdf_file_path, pdf_folder_path):
                 fout.write(imgdata)
             
             encoded_img_data = base64.b64decode(imgdata)
+            uid = str(uuid.uuid4())
             img_document = {
-                "img_id" : str(uuid.uuid4()),
+                "img_id" : uid,
                 "img_data" : encoded_img_data.decode()
             }
 
+            img_ids.append(uid)
+
             xreflist.append(xref)
-    return imglist, xreflist
+    return imglist, xreflist, img_ids
 
 def image_save(FILE_FLDR, FILE_NAME):
         pdf_file_path = os.path.join(FILE_FLDR, FILE_NAME)
@@ -152,20 +156,22 @@ def image_save(FILE_FLDR, FILE_NAME):
         os.makedirs(pdf_folder_path, exist_ok=True)
         print(f"Created folder '{folder_name}'.")
         t0 = time.time()
-        imglist, xreflist = extract_images_from_pdf(pdf_file_path, pdf_folder_path)
+        imglist, xreflist, img_ids = extract_images_from_pdf(pdf_file_path, pdf_folder_path)
         t1 = time.time()
         print(f"{len(set(imglist))} images in total")
         print(f"{len(xreflist)} images extracted")
         print(f"total time {t1 - t0} sec")
 
+        return img_ids
+
 def get_json(FILE_FLDR, FILE_NAME):
-    image_save(FILE_FLDR, FILE_NAME)
+    img_ids = image_save(FILE_FLDR, FILE_NAME)
     text_save(FILE_FLDR, FILE_NAME)
 
     load_dotenv()
     openai.api_key=os.getenv("OPENAI_API_KEY")
     processor = PumpDataProcessor()
-    return processor.process_unique_keys(FILE_FLDR, FILE_NAME)
+    return processor.process_unique_keys(FILE_FLDR, FILE_NAME), img_ids
 
 def extract_text_from_pdf(pdf_path):
     with open(pdf_path, 'rb') as file:
@@ -221,6 +227,6 @@ async def upload_pdf_file(file: UploadFile = File(...)):
     # Insert the document into the MongoDB collection
     pdf_collection.insert_one(pdf_document)
 
-    data = get_json(folder_name, file.filename)
-
-    return data
+    data, img_ids = get_json(folder_name, file.filename)
+    
+    return data, img_ids
