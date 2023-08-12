@@ -11,6 +11,8 @@ from PyPDF2 import PdfReader
 import pymongo
 import base64
 import uuid
+import uvicorn
+
 
 
 app = FastAPI()
@@ -43,7 +45,7 @@ class PumpDataProcessor:
         ]
     def get_pump_info(self, pump_data):
         try:
-            prompt = f"{pump_data}This is pump description. {self.sample_data_keys, self.sample_data_value} This is sample data. Give me {', '.join(self.sample_data_keys)}. Provide the response in JSON format, with keys in lowercase without spaces or symbols."
+            prompt = f"{pump_data}This is equipment description. Give me {', '.join(self.sample_data_keys)} from description. Provide the response in JSON format, with keys in lowercase without spaces or symbols."
             response = openai.Completion.create(
                 engine='text-davinci-003',
                 prompt=prompt,
@@ -231,3 +233,6 @@ async def upload_pdf_file(file: UploadFile = File(...)):
     data, img_ids = get_json(folder_name, file.filename)
     
     return data, img_ids
+
+if __name__ == "__main__":
+   uvicorn.run("main:app", host="0.0.0.0", port=8080, reload=True)
