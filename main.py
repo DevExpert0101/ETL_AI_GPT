@@ -87,7 +87,7 @@ class PumpDataProcessor:
     def process_unique_keys(self, FILE_FLDR, FILE_NAME):
         if "motor" in FILE_NAME.lower():
             self.catgory = "Electrical Motor"
-        elif "tank" in FILE_NAME.loser():
+        elif "tank" in FILE_NAME.lower():
             self.category = "Tank"
         else:
             self.category = "Heat Exchanger"
