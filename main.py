@@ -175,8 +175,7 @@ def extract_images_from_pdf(pdf_file_path, pdf_folder_path):
                 pdf_folder_path, f"img{xref:05}.{image['ext']}")
             with open(imgfile, "wb") as fout:
                 fout.write(imgdata)
-
-            encoded_img_data = base64.b64decode(imgdata)
+                        
             uid = str(uuid.uuid4())
             img_document = {
                 "img_id": uid,
