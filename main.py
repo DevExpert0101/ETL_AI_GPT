@@ -34,6 +34,7 @@ img_collection = database["pdfimages"]
 
 class PumpDataProcessor:
     def __init__(self):
+        self.category="Pump"
         self.sample_data_keys = {"Pump": [
             'name', 'Maximum temperature', 'Maximum temperature (with flush)', 'Maximum suction pressure',
             'Maximum head', 'Maximum speed', 'Maximum flow', 'Maximum horsepower', 'Rotor',
