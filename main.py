@@ -25,11 +25,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-client = pymongo.MongoClient(
-    "mongodb+srv://KellyForPDFScraper:wKceyRadQErXNc92@enp.ocrp5.mongodb.net/?retryWrites=true&w=majority")
-database = client["stgsupplier"]
-pdf_collection = database["pdfcatalogue"]
-img_collection = database["pdfimages"]
+# client = pymongo.MongoClient(
+#     "mongodb+srv://KellyForPDFScraper:wKceyRadQErXNc92@enp.ocrp5.mongodb.net/?retryWrites=true&w=majority")
+# database = client["stgsupplier"]
+# pdf_collection = database["pdfcatalogue"]
+# img_collection = database["pdfimages"]
 
 
 class PumpDataProcessor:
@@ -47,8 +47,9 @@ class PumpDataProcessor:
                 "Electrical Data (Speed)", "Electrical Data (V)", "Motor Base", "Motor Frame Size", "NEMA Design Code", "No of Phase",
                 "No of Speeds", "Shaft Diameter", "Standards", "UNSPC", "HS/ Custom Tarrif Code"],
 
-            "Tank" : ["Frame Size", "Make", "Model", "Manufacturer", "Product ID/ SKU", "Description",
-                    "Brand/ Label", "Certification Agency", "Country of Origin", "Dimensions", "Weight", "Temperature", "Pressure", "Volume", "Body"],
+            "Tank" : [
+                "Frame Size", "Make", "Model", "Manufacturer", "Product ID/ SKU", "Description", "Brand/ Label", "Certification Agency","Country of Origin",
+                    "Dimensions", "Weight", "Temperature", "Pressure", "Volume", "Body", "Shell", "Bladder","System Connection" ],
                     
             "Heat Exchanger" :  ["Frame Size","Make","Model","Manufacturer","Product ID/ SKU","Description","Brand/ Label",
                     "Certification Agency","Country of Origin","Dimensions","Weight","Temperature","Pressure","Volume","Body","Heat exchanged"]       
@@ -63,13 +64,25 @@ class PumpDataProcessor:
                 ,"CCSA USCSA EEV","61 in x 29.5 in x 44 in","1253.729 kg","TEFC","Iron","327","60 Hz","300 Hp","1780 r/min","460 V","Foot Mounted","449TS","B"
                 ,"3","Single Speed","2.375 in","NEMA","26101112","85015381"],
 
+            "Tank": [ 
+                "30(762)IN * 65(1651)IN", "", "1060BP-600", "Aurora", "1060BP-600", "For Domestic Potable Water Systems", "Aurora", "ASME", "30IN*65IN", "360 lbs", "200°F",
+                "125 psi", "158 gal", "", "Steel", "Heavy Duty Butyl - FDA approved", "Bronze" ],
+
+            "Heat Exchanger" :  [
+                "", "", "DNA 159.10.S24", "Hexonic", "DNA 159.10.S24", "", "Hexonic", "PED, ASME, EAC, China ML", "", "140mm,850mm,1260mm,159mm", "92.9 lb", "392°F, -4°F",
+                "145 psi, 232 psi", "1.8 gal, 3.5 gal", "AISI 316L / 1.4404", "" ]
             }
+        
+
 
     def get_pump_info(self, pump_data):
         try:
-            data_keys = json.loads(self.sample_data_keys[self.category])
-            data_value = json.load(self.sample_data_value[self.category])
-            prompt = f"{pump_data}This is equipment description. {data_keys, data_value} This is sample data. Give me {', '.join(data_keys)}. Provide the response in JSON format, with keys in lowercase without spaces or symbols."
+                        
+            data_keys = self.sample_data_keys[self.category]            
+            data_value = self.sample_data_value[self.category]
+            
+            prompt = f"{pump_data}This is equipment description. Please give me attributes {', '.join(data_keys)}. Provide the response in JSON format, with keys in lowercase without spaces or symbols."
+            
             response = openai.Completion.create(
                 engine='text-davinci-003',
                 prompt=prompt,
@@ -80,29 +93,40 @@ class PumpDataProcessor:
                 presence_penalty=0.0,
                 n=1
             )
+            
             return json.loads(response.choices[0].text.strip())
         except Exception as e:
             print(f"An error occurred: {str(e)}")
             return {"": ""}
 
     def process_unique_keys(self, FILE_FLDR, FILE_NAME):
+        
         if "motor" in FILE_NAME.lower():
-            self.catgory = "Electrical Motor"
+            self.category = "Electrical Motor"
         elif "tank" in FILE_NAME.lower():
             self.category = "Tank"
         else:
             self.category = "Heat Exchanger"
 
+        
+
         folder_name = os.path.splitext(FILE_NAME)[0]
         pdf_folder_path = os.path.join(FILE_FLDR, folder_name)
         text_file_path = os.path.join(pdf_folder_path, folder_name+".txt")
         json_file_path = os.path.join(pdf_folder_path, "json.txt")
-        with open(text_file_path, "r") as text_file:
+
+        
+        with open(text_file_path, "r", encoding="utf-8") as text_file:
+        
             pump_data = text_file.read()
+        
             pump_info = self.get_pump_info(pump_data)
-            print(pump_info)
+        
             with open(json_file_path, "w") as json_file:
+        
                 json_file.write(str(pump_info))
+        
+            print(pump_info)
             return pump_info
 
 
@@ -182,7 +206,7 @@ def extract_images_from_pdf(pdf_file_path, pdf_folder_path):
                 "img_data": imgdata
             }
 
-            img_collection.insert_one(img_document)
+            # img_collection.insert_one(img_document)
             img_ids.append(uid)
 
             xreflist.append(xref)
@@ -194,11 +218,14 @@ def image_save(FILE_FLDR, FILE_NAME):
     folder_name = os.path.splitext(FILE_NAME)[0]
     pdf_folder_path = os.path.join(FILE_FLDR, folder_name)
     os.makedirs(pdf_folder_path, exist_ok=True)
+
     print(f"Created folder '{folder_name}'.")
+
     t0 = time.time()
     imglist, xreflist, img_ids = extract_images_from_pdf(
         pdf_file_path, pdf_folder_path)
     t1 = time.time()
+
     print(f"{len(set(imglist))} images in total")
     print(f"{len(xreflist)} images extracted")
     print(f"total time {t1 - t0} sec")
@@ -217,6 +244,7 @@ def get_json(FILE_FLDR, FILE_NAME):
 
 
 def extract_text_from_pdf(pdf_path):
+    
     with open(pdf_path, 'rb') as file:
         reader = PdfReader(file)
         num_pages = len(reader.pages)
@@ -224,6 +252,8 @@ def extract_text_from_pdf(pdf_path):
         for page_num in range(num_pages):
             page = reader.pages[page_num]
             text_content += page.extract_text()
+    
+    
     return text_content
 
 
@@ -234,8 +264,10 @@ def text_save(FILE_FLDR, FILE_NAME):
     os.makedirs(pdf_folder_path, exist_ok=True)
     print(f"Created folder '{folder_name}'.")
     text_file_path = os.path.join(pdf_folder_path, folder_name+".txt")
-    with open(text_file_path, "w") as text_file:
+    with open(text_file_path, "w", encoding="utf-8") as text_file:
         text_file.write(extract_text_from_pdf(pdf_file_path))
+    
+    
     print(f"Created text file '{folder_name}.txt' in the folder.")
     pdf_file = fitz.open(pdf_file_path)
 
@@ -271,7 +303,7 @@ async def upload_pdf_file(file: UploadFile = File(...)):
     }
 
     # Insert the document into the MongoDB collection
-    pdf_collection.insert_one(pdf_document)
+    # pdf_collection.insert_one(pdf_document)
 
     data, img_ids = get_json(folder_name, file.filename)
 
