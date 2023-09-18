@@ -120,7 +120,11 @@ class PumpDataProcessor:
         
             pump_data = text_file.read()
         
-            pump_info = self.get_pump_info(pump_data)
+            pump_info = {"": ""}
+
+            while pump_info == {"": ""}:
+                print('try for getting data ....')
+                pump_info = self.get_pump_info(pump_data)
         
             with open(json_file_path, "w") as json_file:
         
